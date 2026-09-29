@@ -4,6 +4,8 @@ services:
     runtime: python
     plan: free
     region: oregon
+    repo: https://github.com/varunmulay-droid/ideal-store.git
+    branch: main
     buildCommand: pip install -r backend/requirements.txt
     startCommand: gunicorn -k uvicorn.workers.UvicornWorker backend.app.main:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120
     healthCheckPath: /healthz
@@ -14,10 +16,19 @@ services:
       - key: APP_ENV
         value: production
       - key: DATABASE_URL
-        sync: false
+        fromDatabase:
+          name: mitalli-bridal-db
+          property: connectionString
       - key: ALLOWED_ORIGINS
         value: "*"
       - key: BUSINESS_PHONE
         value: "07383099084"
       - key: WHATSAPP_NUMBER
         value: "917383099084"
+
+databases:
+  - name: mitalli-bridal-db
+    plan: free
+    region: oregon
+    databaseName: mitalli
+    user: mitalli
