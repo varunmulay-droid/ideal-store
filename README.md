@@ -27,8 +27,9 @@ The first startup creates the tables and seeds the initial service menu. Update 
 
 1. Push this repository to GitHub with `render.yaml` at the repository root.
 2. Either click the button above, or in Render choose **New → Blueprint** and select the GitHub repository.
-3. Render detects `render.yaml`, creates the Python web service and provisions the Postgres database.
-4. Deploy the Blueprint. The web service uses the generated `DATABASE_URL` automatically.
+3. Render detects `render.yaml` and creates the Python web service without provisioning a second Postgres database.
+4. When Render asks for `DATABASE_URL`, paste the existing database connection string into the protected environment-variable field.
+5. Deploy the Blueprint. The web service uses that protected `DATABASE_URL`.
 
 The Blueprint includes:
 
@@ -36,7 +37,9 @@ The Blueprint includes:
 - Production Gunicorn/Uvicorn start command.
 - Render health check at `/healthz`.
 - Automatic deploys on commits to the linked GitHub branch.
-- A managed Postgres database wired into the web service.
+- A protected `DATABASE_URL` input for reusing an existing Render Postgres database.
+
+Never commit `DATABASE_URL` to GitHub. Set it in Render’s environment variables and rotate the database password if the connection string has been exposed.
 
 For production, update `ALLOWED_ORIGINS`, verify business details, and replace the placeholder gallery treatment with approved business photography.
 
