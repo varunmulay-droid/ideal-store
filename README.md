@@ -6,6 +6,7 @@ A polished, mobile-first beauty studio website with:
 - Deterministic multilingual chatbot powered by spaCy's blank tokenizer and `Matcher`.
 - Service prices read from the database instead of being hard-coded into chatbot responses.
 - Appointment requests and leads persisted to PostgreSQL on Render, with SQLite fallback for local development.
+- Protected staff dashboard at `/admin.html` for managing appointment statuses and viewing leads.
 - Glassmorphism UI with restrained motion, responsive layout, and mobile-friendly CTAs.
 
 ## Local development
@@ -37,8 +38,13 @@ The Blueprint includes:
 - Render health check at `/healthz`.
 - Automatic deploys on commits to the linked GitHub branch.
 - Automatic `DATABASE_URL` wiring from the managed `mitalli-bridal-db` database.
+- A generated `ADMIN_ACCESS_KEY` for the protected staff dashboard.
 
 Never commit `DATABASE_URL` to GitHub. Render injects it through `fromDatabase`. Rotate the database password if the connection string has been exposed.
+
+### Staff dashboard
+
+Open `/admin.html` on the deployed service. Copy the generated `ADMIN_ACCESS_KEY` from the web service's protected Render environment variables and enter it on the login screen. The dashboard lists appointment requests, phone numbers, preferred dates/times, services, leads, and lets staff update appointment status. The access key is never stored in the repository.
 
 For production, update `ALLOWED_ORIGINS`, verify business details, and replace the placeholder gallery treatment with approved business photography.
 
