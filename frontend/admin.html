@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#24131a" />
+    <title>Mitalli Staff Desk</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/admin.css" />
+  </head>
+  <body>
+    <main class="admin-shell">
+      <section class="login-card" id="login-view">
+        <a class="admin-brand" href="/"><span>M</span><strong>MITALLI <small>Staff desk</small></strong></a>
+        <p class="kicker">Private workspace</p>
+        <h1>Welcome back.</h1>
+        <p class="muted">Review appointment requests and keep every customer moving forward.</p>
+        <form id="login-form">
+          <label>Admin access key<input id="access-key" type="password" autocomplete="current-password" required placeholder="Paste the Render-generated key" /></label>
+          <button class="primary-button" type="submit">Open staff desk <span>↗</span></button>
+          <p class="form-error" id="login-error" role="alert"></p>
+        </form>
+        <a class="back-link" href="/">← Back to website</a>
+      </section>
+
+      <section id="dashboard-view" hidden>
+        <header class="admin-header">
+          <div><a class="admin-brand" href="/"><span>M</span><strong>MITALLI <small>Staff desk</small></strong></a><p class="kicker">Appointment operations</p><h1>Good day, team.</h1></div>
+          <div class="header-actions"><span class="secure-label">● Secure session</span><button class="ghost-button" id="logout-button">Log out</button></div>
+        </header>
+        <div class="stat-grid" id="stat-grid"></div>
+        <section class="desk-section">
+          <div class="section-head"><div><p class="kicker">Customer requests</p><h2>Appointments</h2></div><button class="ghost-button" id="refresh-button">Refresh ↻</button></div>
+          <div class="table-wrap"><table><thead><tr><th>Customer</th><th>Service</th><th>Requested slot</th><th>Message</th><th>Status</th></tr></thead><tbody id="appointments-body"></tbody></table></div>
+        </section>
+        <section class="desk-section">
+          <div class="section-head"><div><p class="kicker">Every conversation</p><h2>Leads</h2></div></div>
+          <div class="table-wrap"><table><thead><tr><th>Customer</th><th>Interest</th><th>Source</th><th>Message</th><th>Status</th></tr></thead><tbody id="leads-body"></tbody></table></div>
+        </section>
+      </section>
+    </main>
+    <div class="toast" id="toast" role="status"></div>
+    <script src="/admin.js"></script>
+  </body>
+</html>
