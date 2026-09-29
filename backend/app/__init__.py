@@ -1,0 +1,1 @@
+"""Mitalli Bridal World backend package."""
