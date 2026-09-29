@@ -1,13 +1,14 @@
 import os
+import secrets
 from datetime import date, time
 from pathlib import Path
 from typing import Any
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
-from sqlalchemy import select, text
+from sqlalchemy import desc, func, select, text
 from sqlalchemy.orm import Session
 
 from .chatbot import build_matcher
@@ -51,6 +52,23 @@ class AppointmentCreate(BaseModel):
     appointment_date: date | None = None
     preferred_time: time | None = None
     message: str | None = Field(default=None, max_length=1000)
+
+
+class AdminLogin(BaseModel):
+    access_key: str = Field(min_length=1, max_length=300)
+
+
+class AdminStatusUpdate(BaseModel):
+    status: str = Field(pattern="^(pending|contacted|confirmed|completed|cancelled)$")
+
+
+def require_admin(
+    x_admin_key: str | None = Header(default=None, alias="X-Admin-Key"),
+) -> bool:
+    expected_key = os.getenv("ADMIN_ACCESS_KEY", "").strip()
+    if not expected_key or not x_admin_key or not secrets.compare_digest(x_admin_key, expected_key):
+        raise HTTPException(status_code=401, detail="Admin authentication required")
+    return True
 
 
 def _service_payload(service: Service) -> dict[str, Any]:
@@ -171,6 +189,98 @@ def create_appointment(
         "status": appointment.status,
         "message": "Your appointment request has been received. Our team will confirm the slot.",
     }
+
+
+@app.post("/api/admin/login")
+def admin_login(payload: AdminLogin) -> dict[str, bool]:
+    expected_key = os.getenv("ADMIN_ACCESS_KEY", "").strip()
+    if not expected_key:
+        raise HTTPException(status_code=503, detail="Admin access is not configured")
+    if not secrets.compare_digest(payload.access_key, expected_key):
+        raise HTTPException(status_code=401, detail="Invalid admin access key")
+    return {"authenticated": True}
+
+
+@app.get("/api/admin/summary")
+def admin_summary(
+    db: Session = Depends(get_db), _: bool = Depends(require_admin)
+) -> dict[str, int]:
+    counts = {
+        status: db.scalar(
+            select(func.count(Appointment.id)).where(Appointment.status == status)
+        )
+        or 0
+        for status in ("pending", "contacted", "confirmed", "completed", "cancelled")
+    }
+    counts["total_appointments"] = sum(counts.values())
+    counts["total_leads"] = db.scalar(select(func.count(Lead.id))) or 0
+    return counts
+
+
+@app.get("/api/admin/appointments")
+def admin_appointments(
+    db: Session = Depends(get_db), _: bool = Depends(require_admin)
+) -> list[dict[str, Any]]:
+    rows = db.execute(
+        select(Appointment, Service.name)
+        .outerjoin(Service, Appointment.service_id == Service.id)
+        .order_by(desc(Appointment.created_at))
+    ).all()
+    return [
+        {
+            "id": appointment.id,
+            "customer_name": appointment.customer_name,
+            "phone": appointment.phone,
+            "service": service_name or "Service not selected",
+            "appointment_date": appointment.appointment_date.isoformat()
+            if appointment.appointment_date
+            else None,
+            "preferred_time": appointment.preferred_time.strftime("%H:%M")
+            if appointment.preferred_time
+            else None,
+            "message": appointment.message,
+            "status": appointment.status,
+            "created_at": appointment.created_at.isoformat()
+            if appointment.created_at
+            else None,
+        }
+        for appointment, service_name in rows
+    ]
+
+
+@app.patch("/api/admin/appointments/{appointment_id}")
+def update_appointment_status(
+    appointment_id: int,
+    payload: AdminStatusUpdate,
+    db: Session = Depends(get_db),
+    _: bool = Depends(require_admin),
+) -> dict[str, Any]:
+    appointment = db.get(Appointment, appointment_id)
+    if appointment is None:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+    appointment.status = payload.status
+    db.commit()
+    return {"id": appointment.id, "status": appointment.status}
+
+
+@app.get("/api/admin/leads")
+def admin_leads(
+    db: Session = Depends(get_db), _: bool = Depends(require_admin)
+) -> list[dict[str, Any]]:
+    leads = db.scalars(select(Lead).order_by(desc(Lead.created_at))).all()
+    return [
+        {
+            "id": lead.id,
+            "name": lead.name,
+            "phone": lead.phone,
+            "source": lead.source,
+            "service_interest": lead.service_interest,
+            "message": lead.message,
+            "status": lead.status,
+            "created_at": lead.created_at.isoformat() if lead.created_at else None,
+        }
+        for lead in leads
+    ]
 
 
 if FRONTEND_DIR.exists():
