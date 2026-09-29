@@ -25,6 +25,8 @@ services:
         value: "07383099084"
       - key: WHATSAPP_NUMBER
         value: "917383099084"
+      - key: ADMIN_ACCESS_KEY
+        generateValue: true
 
 databases:
   - name: mitalli-bridal-db
